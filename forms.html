@@ -1,0 +1,834 @@
+Gotcha—let’s skip Microsoft Forms and go full HTML.
+
+Here’s a **standalone PCR web form** with:
+
+* **Tabs/sections**: Incident, Patient, Assessment, Vitals & Treatments, Times & Disposition, Narrative
+* **Auto-filled headers** on every tab (Run #, Unit, Date/Time, Patient Name)
+* **“AI-style” narrative generator** that builds a narrative from what you’ve entered
+* Buttons to **copy narrative** and **print/save as PDF**
+
+You can save this as `pcr_form.html` and open it in any browser.
+
+---
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EMS Patient Care Report (PCR)</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f7;
+      color: #222;
+    }
+
+    header {
+      background: #1f2933;
+      color: #fff;
+      padding: 1rem 1.5rem;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    header small {
+      display: block;
+      margin-top: 0.25rem;
+      opacity: 0.8;
+    }
+
+    main {
+      padding: 1rem 1.5rem 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-button {
+      border: none;
+      padding: 0.5rem 0.9rem;
+      border-radius: 0.5rem;
+      background: #e5e7eb;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .tab-button.active {
+      background: #2563eb;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      background: white;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+      margin-bottom: 1rem;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .tab-header {
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid #e5e7eb;
+      color: #4b5563;
+    }
+
+    .tab-header span {
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem 1rem;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="datetime-local"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.35rem 0.45rem;
+      border-radius: 0.45rem;
+      border: 1px solid #d1d5db;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .section-title {
+      margin: 0.8rem 0 0.4rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-outline {
+      background: white;
+      border: 1px solid #d1d5db;
+      color: #374151;
+    }
+
+    .output-box {
+      background: #f9fafb;
+      padding: 0.8rem;
+      border-radius: 0.5rem;
+      border: 1px solid #e5e7eb;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+    }
+
+    .small-note {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.3rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>EMS Patient Care Report</h1>
+    <small>
+      Online PCR form with auto-filled tab headers and generated narrative.
+    </small>
+  </header>
+
+  <main>
+    <div class="tab-bar">
+      <button class="tab-button active" data-tab="incident">Incident</button>
+      <button class="tab-button" data-tab="patient">Patient</button>
+      <button class="tab-button" data-tab="assessment">Assessment</button>
+      <button class="tab-button" data-tab="vitals">Vitals &amp; Treatments</button>
+      <button class="tab-button" data-tab="times">Times &amp; Disposition</button>
+      <button class="tab-button" data-tab="narrative">Narrative &amp; Output</button>
+    </div>
+
+    <form id="pcrForm">
+      <!-- INCIDENT TAB -->
+      <section id="incident" class="tab-content active">
+        <div class="tab-header">
+          Run: <span class="auto-run">N/A</span> |
+          Unit: <span class="auto-unit">N/A</span> |
+          Date/Time: <span class="auto-date">N/A</span> |
+          Patient: <span class="auto-patient">N/A</span>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label for="runNumber">Run / Incident Number</label>
+            <input type="text" id="runNumber" name="runNumber" placeholder="25-123456" />
+          </div>
+          <div>
+            <label for="unitNumber">Unit ID</label>
+            <input type="text" id="unitNumber" name="unitNumber" placeholder="Medic 1" />
+          </div>
+          <div>
+            <label for="incidentDateTime">Incident Date &amp; Time</label>
+            <input type="datetime-local" id="incidentDateTime" name="incidentDateTime" />
+          </div>
+          <div>
+            <label for="crew">Crew Members</label>
+            <input type="text" id="crew" name="crew" placeholder="Doe, Smith" />
+          </div>
+        </div>
+
+        <div class="section-title">Location &amp; Chief Complaint</div>
+        <div class="grid">
+          <div>
+            <label for="incidentLocation">Address / Location</label>
+            <input type="text" id="incidentLocation" name="incidentLocation" placeholder="123 Main St, Apt 2B" />
+          </div>
+          <div>
+            <label for="incidentCounty">County</label>
+            <input type="text" id="incidentCounty" name="incidentCounty" placeholder="Lee County" />
+          </div>
+          <div>
+            <label for="incidentLocationType">Location Type</label>
+            <input type="text" id="incidentLocationType" name="incidentLocationType" placeholder="Home, street, public building, etc." />
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label for="chiefComplaint">Chief Complaint (CC)</label>
+            <input type="text" id="chiefComplaint" name="chiefComplaint" placeholder="Chest pain" />
+          </div>
+          <div>
+            <label for="primaryImpression">Primary Impression</label>
+            <input type="text" id="primaryImpression" name="primaryImpression" placeholder="ACS / MI suspected" />
+          </div>
+          <div>
+            <label for="secondaryImpression">Secondary Impression</label>
+            <input type="text" id="secondaryImpression" name="secondaryImpression" placeholder="Anxiety, nausea" />
+          </div>
+        </div>
+      </section>
+
+      <!-- PATIENT TAB -->
+      <section id="patient" class="tab-content">
+        <div class="tab-header">
+          Run: <span class="auto-run">N/A</span> |
+          Unit: <span class="auto-unit">N/A</span> |
+          Date/Time: <span class="auto-date">N/A</span> |
+          Patient: <span class="auto-patient">N/A</span>
+        </div>
+
+        <div class="section-title">Patient Information</div>
+        <div class="grid">
+          <div>
+            <label for="patientFirstName">First Name</label>
+            <input type="text" id="patientFirstName" name="patientFirstName" />
+          </div>
+          <div>
+            <label for="patientLastName">Last Name</label>
+            <input type="text" id="patientLastName" name="patientLastName" />
+          </div>
+          <div>
+            <label for="age">Age</label>
+            <input type="number" id="age" name="age" min="0" max="120" />
+          </div>
+          <div>
+            <label for="sex">Sex</label>
+            <select id="sex" name="sex">
+              <option value="">Select…</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Nonbinary</option>
+              <option>Unknown</option>
+            </select>
+          </div>
+          <div>
+            <label for="dob">Date of Birth</label>
+            <input type="text" id="dob" name="dob" placeholder="MM/DD/YYYY" />
+          </div>
+          <div>
+            <label for="weight">Weight (kg)</label>
+            <input type="number" step="0.1" id="weight" name="weight" />
+          </div>
+        </div>
+
+        <div class="section-title">Contact &amp; Location</div>
+        <div class="grid">
+          <div>
+            <label for="patientAddress">Home Address</label>
+            <input type="text" id="patientAddress" name="patientAddress" />
+          </div>
+          <div>
+            <label for="phone">Phone</label>
+            <input type="text" id="phone" name="phone" />
+          </div>
+        </div>
+
+        <div class="section-title">History</div>
+        <div class="grid">
+          <div>
+            <label for="allergies">Allergies</label>
+            <input type="text" id="allergies" name="allergies" placeholder="NKDA or list" />
+          </div>
+          <div>
+            <label for="medications">Medications</label>
+            <input type="text" id="medications" name="medications" />
+          </div>
+        </div>
+        <div>
+          <label for="medicalHistory">Pertinent Medical History</label>
+          <textarea id="medicalHistory" name="medicalHistory" placeholder="Hx DM, HTN, COPD, etc."></textarea>
+        </div>
+      </section>
+
+      <!-- ASSESSMENT TAB -->
+      <section id="assessment" class="tab-content">
+        <div class="tab-header">
+          Run: <span class="auto-run">N/A</span> |
+          Unit: <span class="auto-unit">N/A</span> |
+          Date/Time: <span class="auto-date">N/A</span> |
+          Patient: <span class="auto-patient">N/A</span>
+        </div>
+
+        <div class="section-title">General Assessment (ABCs)</div>
+        <div class="grid">
+          <div>
+            <label for="mentalStatus">Mental Status (AVPU)</label>
+            <select id="mentalStatus" name="mentalStatus">
+              <option value="">Select…</option>
+              <option>Alert</option>
+              <option>Verbal</option>
+              <option>Pain</option>
+              <option>Unresponsive</option>
+            </select>
+          </div>
+          <div>
+            <label for="airway">Airway</label>
+            <select id="airway" name="airway">
+              <option value="">Select…</option>
+              <option>Patent</option>
+              <option>Compromised</option>
+              <option>Obstructed</option>
+            </select>
+          </div>
+          <div>
+            <label for="breathing">Breathing</label>
+            <select id="breathing" name="breathing">
+              <option value="">Select…</option>
+              <option>Normal</option>
+              <option>Increased work of breathing</option>
+              <option>Labored</option>
+              <option>Shallow</option>
+              <option>Absent</option>
+            </select>
+          </div>
+          <div>
+            <label for="circulation">Circulation</label>
+            <select id="circulation" name="circulation">
+              <option value="">Select…</option>
+              <option>Normal</option>
+              <option>Weak pulses</option>
+              <option>Pale</option>
+              <option>Cool/clammy</option>
+              <option>Mottled</option>
+            </select>
+          </div>
+          <div>
+            <label for="skin">Skin</label>
+            <input type="text" id="skin" name="skin" placeholder="Pink, warm, dry" />
+          </div>
+          <div>
+            <label for="pupils">Pupils</label>
+            <input type="text" id="pupils" name="pupils" placeholder="PERRL" />
+          </div>
+        </div>
+
+        <div class="section-title">Physical Findings</div>
+        <div>
+          <label for="findings">Focused / head-to-toe exam findings</label>
+          <textarea id="findings" name="findings" placeholder="Describe exam findings…"></textarea>
+        </div>
+      </section>
+
+      <!-- VITALS & TREATMENTS TAB -->
+      <section id="vitals" class="tab-content">
+        <div class="tab-header">
+          Run: <span class="auto-run">N/A</span> |
+          Unit: <span class="auto-unit">N/A</span> |
+          Date/Time: <span class="auto-date">N/A</span> |
+          Patient: <span class="auto-patient">N/A</span>
+        </div>
+
+        <div class="section-title">First Set of Vitals</div>
+        <div class="grid">
+          <div>
+            <label for="vitalsTime1">Vitals Time (Set 1)</label>
+            <input type="text" id="vitalsTime1" name="vitalsTime1" placeholder="HH:MM" />
+          </div>
+          <div>
+            <label for="bp1">Blood Pressure (Set 1)</label>
+            <input type="text" id="bp1" name="bp1" placeholder="120/80" />
+          </div>
+          <div>
+            <label for="hr1">Heart Rate (Set 1)</label>
+            <input type="number" id="hr1" name="hr1" placeholder="bpm" />
+          </div>
+          <div>
+            <label for="rr1">Respiratory Rate (Set 1)</label>
+            <input type="number" id="rr1" name="rr1" placeholder="breaths/min" />
+          </div>
+          <div>
+            <label for="spo2_1">SpO₂ % (Set 1)</label>
+            <input type="number" id="spo2_1" name="spo2_1" />
+          </div>
+          <div>
+            <label for="temp1">Temperature (Set 1, °F)</label>
+            <input type="number" step="0.1" id="temp1" name="temp1" />
+          </div>
+          <div>
+            <label for="pain1">Pain Score 0–10 (Set 1)</label>
+            <input type="number" id="pain1" name="pain1" min="0" max="10" />
+          </div>
+          <div>
+            <label for="gcs1">GCS (Set 1)</label>
+            <input type="number" id="gcs1" name="gcs1" min="3" max="15" />
+          </div>
+        </div>
+
+        <div class="section-title">Treatments</div>
+        <div class="grid">
+          <div>
+            <label for="airwayManagement">Airway / Breathing Management</label>
+            <input type="text" id="airwayManagement" name="airwayManagement" placeholder="O₂ via NRB, BVM, OPA/NPA, etc." />
+          </div>
+          <div>
+            <label for="circulationManagement">Circulation / Bleeding Control</label>
+            <input type="text" id="circulationManagement" name="circulationManagement" placeholder="Direct pressure, tourniquet, etc." />
+          </div>
+        </div>
+        <div class="grid">
+          <div>
+            <label for="medsGiven">Medications Given</label>
+            <textarea id="medsGiven" name="medsGiven" placeholder="Drug, dose, route, time, response…"></textarea>
+          </div>
+          <div>
+            <label for="otherInterventions">Other Interventions</label>
+            <textarea id="otherInterventions" name="otherInterventions" placeholder="Splinting, bandaging, positioning, spinal precautions, etc."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- TIMES & DISPOSITION TAB -->
+      <section id="times" class="tab-content">
+        <div class="tab-header">
+          Run: <span class="auto-run">N/A</span> |
+          Unit: <span class="auto-unit">N/A</span> |
+          Date/Time: <span class="auto-date">N/A</span> |
+          Patient: <span class="auto-patient">N/A</span>
+        </div>
+
+        <div class="section-title">Times</div>
+        <div>
+          <label for="dispatchTimes">Dispatch & scene times</label>
+          <textarea id="dispatchTimes" name="dispatchTimes" placeholder="Call received: __; En route: __; On scene: __; Patient contact: __; Depart scene: __; Arrive destination: __; In service: __."></textarea>
+        </div>
+
+        <div class="section-title">Destination & Disposition</div>
+        <div class="grid">
+          <div>
+            <label for="destination">Destination (hospital / facility)</label>
+            <input type="text" id="destination" name="destination" placeholder="Example: East Alabama Medical Center" />
+          </div>
+          <div>
+            <label for="destinationType">Destination Type</label>
+            <select id="destinationType" name="destinationType">
+              <option value="">Select…</option>
+              <option>Hospital ED/OR/L&D</option>
+              <option>Other EMS (ground)</option>
+              <option>Other EMS (air)</option>
+              <option>Nursing home / SNF</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="destinationReason">Reason for choosing destination</label>
+            <select id="destinationReason" name="destinationReason">
+              <option value="">Select…</option>
+              <option>Closest</option>
+              <option>Patient choice</option>
+              <option>Patient’s physician</option>
+              <option>Diversion / bypass</option>
+              <option>Protocol / medical control</option>
+              <option>Family choice</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label for="advanceDirective">Advance directive present?</label>
+            <select id="advanceDirective" name="advanceDirective">
+              <option value="">Select…</option>
+              <option>None</option>
+              <option>State DNR</option>
+              <option>Living will</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="finalDisposition">Final disposition</label>
+            <select id="finalDisposition" name="finalDisposition">
+              <option value="">Select…</option>
+              <option>Treated & transported</option>
+              <option>Treated & released (AMA)</option>
+              <option>Treated & released (no transport)</option>
+              <option>No patient found</option>
+              <option>Dead at scene</option>
+              <option>Cancelled en route</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="crewNames">Crew members (names & roles)</label>
+          <textarea id="crewNames" name="crewNames" placeholder="EMT-B Smith (primary), EMT-A Jones (driver), etc."></textarea>
+        </div>
+      </section>
+
+      <!-- NARRATIVE TAB -->
+      <section id="narrative" class="tab-content">
+        <div class="tab-header">
+          Run: <span class="auto-run">N/A</span> |
+          Unit: <span class="auto-unit">N/A</span> |
+          Date/Time: <span class="auto-date">N/A</span> |
+          Patient: <span class="auto-patient">N/A</span>
+        </div>
+
+        <div class="section-title">Generated Narrative</div>
+        <textarea id="narrativeText" placeholder="Click 'Generate Narrative' to auto-fill this, then edit as needed."></textarea>
+        <div class="small-note">
+          This is a template-based narrative generated from the fields you entered.
+          You are responsible for accuracy and completeness.
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-primary" id="generateNarrativeBtn">
+            Generate Narrative
+          </button>
+          <button type="button" class="btn btn-outline" id="copyNarrativeBtn">
+            Copy Narrative
+          </button>
+          <button type="button" class="btn btn-outline" id="printBtn">
+            Print / Save as PDF
+          </button>
+        </div>
+
+        <div class="section-title">Quick Summary (for QA / handoff)</div>
+        <div id="summaryBox" class="output-box">
+          Summary will appear here after you generate the narrative.
+        </div>
+      </section>
+    </form>
+  </main>
+
+  <script>
+    // ----- TAB HANDLING -----
+    const tabButtons = document.querySelectorAll(".tab-button");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-tab");
+
+        tabButtons.forEach(b => b.classList.remove("active"));
+        tabContents.forEach(c => c.classList.remove("active"));
+
+        btn.classList.add("active");
+        document.getElementById(target).classList.add("active");
+      });
+    });
+
+    // ----- AUTO FILL HEADERS (RUN + UNIT + DATE + PATIENT NAME) -----
+    const runInput = document.getElementById("runNumber");
+    const unitInput = document.getElementById("unitNumber");
+    const dateInput = document.getElementById("incidentDateTime");
+    const firstNameInput = document.getElementById("patientFirstName");
+    const lastNameInput = document.getElementById("patientLastName");
+
+    const autoRunSpans = document.querySelectorAll(".auto-run");
+    const autoUnitSpans = document.querySelectorAll(".auto-unit");
+    const autoDateSpans = document.querySelectorAll(".auto-date");
+    const autoPatientSpans = document.querySelectorAll(".auto-patient");
+
+    function updateAutoHeaders() {
+      const run = (runInput.value || "").trim() || "N/A";
+      const unit = (unitInput.value || "").trim() || "N/A";
+      const dt = (dateInput.value || "").trim() || "N/A";
+      const patientName =
+        (firstNameInput.value + " " + lastNameInput.value).trim() || "N/A";
+
+      autoRunSpans.forEach(span => (span.textContent = run));
+      autoUnitSpans.forEach(span => (span.textContent = unit));
+      autoDateSpans.forEach(span => (span.textContent = dt));
+      autoPatientSpans.forEach(span => (span.textContent = patientName));
+    }
+
+    [runInput, unitInput, dateInput, firstNameInput, lastNameInput].forEach(el => {
+      el.addEventListener("input", updateAutoHeaders);
+    });
+
+    // ----- NARRATIVE GENERATION -----
+    function safe(v) {
+      return (v || "").toString().trim();
+    }
+
+    function generateNarrative() {
+      const unit = safe(unitInput.value);
+      const crew = safe(document.getElementById("crew").value);
+      const run = safe(runInput.value);
+      const dt = safe(dateInput.value);
+      const loc = safe(document.getElementById("incidentLocation").value);
+      const county = safe(document.getElementById("incidentCounty").value);
+      const locType = safe(document.getElementById("incidentLocationType").value);
+      const cc = safe(document.getElementById("chiefComplaint").value);
+      const prim = safe(document.getElementById("primaryImpression").value);
+      const sec = safe(document.getElementById("secondaryImpression").value);
+
+      const first = safe(firstNameInput.value);
+      const last = safe(lastNameInput.value);
+      const age = safe(document.getElementById("age").value);
+      const sex = safe(document.getElementById("sex").value);
+      const hx = safe(document.getElementById("medicalHistory").value);
+      const meds = safe(document.getElementById("medications").value);
+      const allergies = safe(document.getElementById("allergies").value);
+
+      const mental = safe(document.getElementById("mentalStatus").value);
+      const airway = safe(document.getElementById("airway").value);
+      const breathing = safe(document.getElementById("breathing").value);
+      const circulation = safe(document.getElementById("circulation").value);
+      const skin = safe(document.getElementById("skin").value);
+      const pupils = safe(document.getElementById("pupils").value);
+      const findings = safe(document.getElementById("findings").value);
+
+      const vt = safe(document.getElementById("vitalsTime1").value);
+      const bp1 = safe(document.getElementById("bp1").value);
+      const hr1 = safe(document.getElementById("hr1").value);
+      const rr1 = safe(document.getElementById("rr1").value);
+      const spo1 = safe(document.getElementById("spo2_1").value);
+      const t1 = safe(document.getElementById("temp1").value);
+      const pain1 = safe(document.getElementById("pain1").value);
+      const gcs1 = safe(document.getElementById("gcs1").value);
+
+      const airwayMgmt = safe(document.getElementById("airwayManagement").value);
+      const circMgmt = safe(document.getElementById("circulationManagement").value);
+      const medsGiven = safe(document.getElementById("medsGiven").value);
+      const otherInterventions = safe(document.getElementById("otherInterventions").value);
+
+      const dispatchTimes = safe(document.getElementById("dispatchTimes").value);
+      const destination = safe(document.getElementById("destination").value);
+      const destinationType = safe(document.getElementById("destinationType").value);
+      const destinationReason = safe(document.getElementById("destinationReason").value);
+      const advanceDirective = safe(document.getElementById("advanceDirective").value);
+      const finalDisposition = safe(document.getElementById("finalDisposition").value);
+      const crewNames = safe(document.getElementById("crewNames").value);
+
+      const patientName = (first + " " + last).trim() || "patient";
+
+      let lines = [];
+
+      // Dispatch / arrival
+      lines.push(
+        `Unit ${unit || "___"} (crew: ${crew || crewNames || "___"}) was dispatched on run ${
+          run || "___"
+        } on ${dt || "___"} to ${loc || "___"} ${
+          county ? "in " + county + " County" : ""
+        } (${locType || "location type not specified"}) for a ${
+          age || "___"
+        }-year-old ${sex || "patient"} with chief complaint of ${cc || "___"}.`
+      );
+
+      // General patient info / history
+      lines.push(
+        `${patientName} is a ${age || "___"}-year-old ${
+          sex || "patient"
+        }. Relevant medical history: ${hx || "not reported"}. Medications: ${
+          meds || "not reported"
+        }. Allergies: ${allergies || "none reported / NKDA"}.`
+      );
+
+      // Initial assessment
+      lines.push(
+        `On initial assessment, mental status was ${mental || "___"}. Airway was ${
+          airway || "___"
+        }. Breathing was ${breathing || "___"}. Circulation was ${
+          circulation || "___"
+        }. Skin: ${skin || "___"}. Pupils: ${pupils || "___"}.`
+      );
+
+      if (findings) {
+        lines.push(`Focused/secondary exam findings: ${findings}`);
+      }
+
+      // Vitals
+      if (vt || bp1 || hr1 || rr1 || spo1 || t1 || pain1 || gcs1) {
+        let vLine = `Initial vitals at ${vt || "___"}: `;
+        if (bp1) vLine += `BP ${bp1}; `;
+        if (hr1) vLine += `HR ${hr1} bpm; `;
+        if (rr1) vLine += `RR ${rr1} breaths/min; `;
+        if (spo1) vLine += `SpO₂ ${spo1}%; `;
+        if (t1) vLine += `Temp ${t1}°F; `;
+        if (pain1) vLine += `Pain ${pain1}/10; `;
+        if (gcs1) vLine += `GCS ${gcs1}.`;
+        lines.push(vLine.trim());
+      }
+
+      // Treatments
+      if (airwayMgmt || circMgmt || medsGiven || otherInterventions) {
+        let treatLines = [];
+        if (airwayMgmt)
+          treatLines.push(`Airway/respiratory management: ${airwayMgmt}`);
+        if (circMgmt)
+          treatLines.push(`Circulation/bleeding management: ${circMgmt}`);
+        if (medsGiven) treatLines.push(`Medications given: ${medsGiven}`);
+        if (otherInterventions)
+          treatLines.push(`Other interventions: ${otherInterventions}`);
+        lines.push(`Treatments provided: ${treatLines.join(" ")}`);
+      }
+
+      // Times
+      if (dispatchTimes) {
+        lines.push(`Times: ${dispatchTimes}`);
+      }
+
+      // Destination / disposition
+      if (destination || destinationType || destinationReason) {
+        lines.push(
+          `Patient was transported to ${destination || "receiving facility"}${
+            destinationType ? " (" + destinationType + ")" : ""
+          } for further evaluation and management. Reason for destination selection: ${
+            destinationReason || "not documented"
+          }.`
+        );
+      }
+
+      if (advanceDirective) {
+        lines.push(`Advance directive on scene: ${advanceDirective}.`);
+      }
+
+      if (finalDisposition) {
+        lines.push(`Final disposition: ${finalDisposition}.`);
+      }
+
+      // Impression
+      if (prim || sec) {
+        lines.push(
+          `Primary impression: ${prim || "___"}. Secondary impression: ${
+            sec || "none"
+          }.`
+        );
+      }
+
+      // Transport / handoff
+      lines.push(
+        "Patient was monitored en route with reassessments as indicated. Patient care and report were transferred to receiving facility staff at bedside."
+      );
+
+      const narrativeText = lines.join("\n\n");
+      const narrativeBox = document.getElementById("narrativeText");
+      narrativeBox.value = narrativeText;
+
+      // Quick summary box
+      const summaryLines = [
+        `Run ${run || "___"} – ${patientName} – ${age || "?"} y/o ${
+          sex || "patient"
+        } – CC: ${cc || "___"}`,
+        `Impression: ${prim || "___"}`,
+        `Initial vitals: BP ${bp1 || "___"}, HR ${hr1 || "___"}, RR ${
+          rr1 || "___"
+        }, SpO₂ ${spo1 || "___"}, Pain ${pain1 || "___"}, GCS ${
+          gcs1 || "___"
+        }`,
+        `Key treatments: ${airwayMgmt || ""} ${circMgmt || ""} ${
+          medsGiven && "[meds given]"
+        } ${otherInterventions && "[other interventions]"}`
+      ];
+      document.getElementById("summaryBox").textContent =
+        summaryLines.join("\n");
+    }
+
+    document
+      .getElementById("generateNarrativeBtn")
+      .addEventListener("click", generateNarrative);
+
+    // Copy narrative
+    document
+      .getElementById("copyNarrativeBtn")
+      .addEventListener("click", async () => {
+        const text = document.getElementById("narrativeText").value;
+        try {
+          await navigator.clipboard.writeText(text);
+          alert("Narrative copied to clipboard.");
+        } catch (e) {
+          alert("Unable to copy. Please select and copy manually.");
+        }
+      });
+
+    // Print
+    document.getElementById("printBtn").addEventListener("click", () => {
+      window.print();
+    });
+
+    // Initialize headers once
+    updateAutoHeaders();
+  </script>
+</body>
+</html>
+```
