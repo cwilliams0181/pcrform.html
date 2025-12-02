@@ -1,15 +1,11 @@
-Gotcha—let’s skip Microsoft Forms and go full HTML.
+Got you. Here’s a **fresh full HTML file** with:
 
-Here’s a **standalone PCR web form** with:
+* Tabs: Incident, Patient, Assessment, Vitals & Treatments (with **3 vital sets**), Times & Disposition, Narrative
+* Auto-filled headers (Run, Unit, Date/Time, Patient) on every tab
+* Narrative generator that uses up to **3 sets of vitals**
+* Copy + Print buttons
 
-* **Tabs/sections**: Incident, Patient, Assessment, Vitals & Treatments, Times & Disposition, Narrative
-* **Auto-filled headers** on every tab (Run #, Unit, Date/Time, Patient Name)
-* **“AI-style” narrative generator** that builds a narrative from what you’ve entered
-* Buttons to **copy narrative** and **print/save as PDF**
-
-You can save this as `pcr_form.html` and open it in any browser.
-
----
+Just copy all of this into a file called `index.html` (or `pcr_form.html`):
 
 ```html
 <!DOCTYPE html>
@@ -181,7 +177,7 @@ You can save this as `pcr_form.html` and open it in any browser.
   <header>
     <h1>EMS Patient Care Report</h1>
     <small>
-      Online PCR form with auto-filled tab headers and generated narrative.
+      Online PCR form with auto-filled tab headers and generated narrative (3 vital sets).
     </small>
   </header>
 
@@ -406,7 +402,8 @@ You can save this as `pcr_form.html` and open it in any browser.
           Patient: <span class="auto-patient">N/A</span>
         </div>
 
-        <div class="section-title">First Set of Vitals</div>
+        <!-- VITALS SET 1 -->
+        <div class="section-title">Vitals – Set 1</div>
         <div class="grid">
           <div>
             <label for="vitalsTime1">Vitals Time (Set 1)</label>
@@ -442,6 +439,81 @@ You can save this as `pcr_form.html` and open it in any browser.
           </div>
         </div>
 
+        <!-- VITALS SET 2 -->
+        <div class="section-title">Vitals – Set 2 (optional)</div>
+        <div class="grid">
+          <div>
+            <label for="vitalsTime2">Vitals Time (Set 2)</label>
+            <input type="text" id="vitalsTime2" name="vitalsTime2" placeholder="HH:MM" />
+          </div>
+          <div>
+            <label for="bp2">Blood Pressure (Set 2)</label>
+            <input type="text" id="bp2" name="bp2" placeholder="120/80" />
+          </div>
+          <div>
+            <label for="hr2">Heart Rate (Set 2)</label>
+            <input type="number" id="hr2" name="hr2" placeholder="bpm" />
+          </div>
+          <div>
+            <label for="rr2">Respiratory Rate (Set 2)</label>
+            <input type="number" id="rr2" name="rr2" placeholder="breaths/min" />
+          </div>
+          <div>
+            <label for="spo2_2">SpO₂ % (Set 2)</label>
+            <input type="number" id="spo2_2" name="spo2_2" />
+          </div>
+          <div>
+            <label for="temp2">Temperature (Set 2, °F)</label>
+            <input type="number" step="0.1" id="temp2" name="temp2" />
+          </div>
+          <div>
+            <label for="pain2">Pain Score 0–10 (Set 2)</label>
+            <input type="number" id="pain2" name="pain2" min="0" max="10" />
+          </div>
+          <div>
+            <label for="gcs2">GCS (Set 2)</label>
+            <input type="number" id="gcs2" name="gcs2" min="3" max="15" />
+          </div>
+        </div>
+
+        <!-- VITALS SET 3 -->
+        <div class="section-title">Vitals – Set 3 (optional)</div>
+        <div class="grid">
+          <div>
+            <label for="vitalsTime3">Vitals Time (Set 3)</label>
+            <input type="text" id="vitalsTime3" name="vitalsTime3" placeholder="HH:MM" />
+          </div>
+          <div>
+            <label for="bp3">Blood Pressure (Set 3)</label>
+            <input type="text" id="bp3" name="bp3" placeholder="120/80" />
+          </div>
+          <div>
+            <label for="hr3">Heart Rate (Set 3)</label>
+            <input type="number" id="hr3" name="hr3" placeholder="bpm" />
+          </div>
+          <div>
+            <label for="rr3">Respiratory Rate (Set 3)</label>
+            <input type="number" id="rr3" name="rr3" placeholder="breaths/min" />
+          </div>
+          <div>
+            <label for="spo2_3">SpO₂ % (Set 3)</label>
+            <input type="number" id="spo2_3" name="spo2_3" />
+          </div>
+          <div>
+            <label for="temp3">Temperature (Set 3, °F)</label>
+            <input type="number" step="0.1" id="temp3" name="temp3" />
+          </div>
+          <div>
+            <label for="pain3">Pain Score 0–10 (Set 3)</label>
+            <input type="number" id="pain3" name="pain3" min="0" max="10" />
+          </div>
+          <div>
+            <label for="gcs3">GCS (Set 3)</label>
+            <input type="number" id="gcs3" name="gcs3" min="3" max="15" />
+          </div>
+        </div>
+
+        <!-- TREATMENTS -->
         <div class="section-title">Treatments</div>
         <div class="grid">
           <div>
@@ -658,6 +730,7 @@ You can save this as `pcr_form.html` and open it in any browser.
       const pupils = safe(document.getElementById("pupils").value);
       const findings = safe(document.getElementById("findings").value);
 
+      // Vitals Set 1
       const vt = safe(document.getElementById("vitalsTime1").value);
       const bp1 = safe(document.getElementById("bp1").value);
       const hr1 = safe(document.getElementById("hr1").value);
@@ -666,6 +739,26 @@ You can save this as `pcr_form.html` and open it in any browser.
       const t1 = safe(document.getElementById("temp1").value);
       const pain1 = safe(document.getElementById("pain1").value);
       const gcs1 = safe(document.getElementById("gcs1").value);
+
+      // Vitals Set 2
+      const vt2 = safe(document.getElementById("vitalsTime2").value);
+      const bp2 = safe(document.getElementById("bp2").value);
+      const hr2 = safe(document.getElementById("hr2").value);
+      const rr2 = safe(document.getElementById("rr2").value);
+      const spo2 = safe(document.getElementById("spo2_2").value);
+      const t2 = safe(document.getElementById("temp2").value);
+      const pain2 = safe(document.getElementById("pain2").value);
+      const gcs2 = safe(document.getElementById("gcs2").value);
+
+      // Vitals Set 3
+      const vt3 = safe(document.getElementById("vitalsTime3").value);
+      const bp3 = safe(document.getElementById("bp3").value);
+      const hr3 = safe(document.getElementById("hr3").value);
+      const rr3 = safe(document.getElementById("rr3").value);
+      const spo3 = safe(document.getElementById("spo2_3").value);
+      const t3 = safe(document.getElementById("temp3").value);
+      const pain3 = safe(document.getElementById("pain3").value);
+      const gcs3 = safe(document.getElementById("gcs3").value);
 
       const airwayMgmt = safe(document.getElementById("airwayManagement").value);
       const circMgmt = safe(document.getElementById("circulationManagement").value);
@@ -717,18 +810,29 @@ You can save this as `pcr_form.html` and open it in any browser.
         lines.push(`Focused/secondary exam findings: ${findings}`);
       }
 
-      // Vitals
-      if (vt || bp1 || hr1 || rr1 || spo1 || t1 || pain1 || gcs1) {
-        let vLine = `Initial vitals at ${vt || "___"}: `;
-        if (bp1) vLine += `BP ${bp1}; `;
-        if (hr1) vLine += `HR ${hr1} bpm; `;
-        if (rr1) vLine += `RR ${rr1} breaths/min; `;
-        if (spo1) vLine += `SpO₂ ${spo1}%; `;
-        if (t1) vLine += `Temp ${t1}°F; `;
-        if (pain1) vLine += `Pain ${pain1}/10; `;
-        if (gcs1) vLine += `GCS ${gcs1}.`;
-        lines.push(vLine.trim());
+      // Helper to build vitals lines
+      function buildVitalsLine(label, time, bp, hr, rr, spo, temp, pain, gcs) {
+        if (!(time || bp || hr || rr || spo || temp || pain || gcs)) return null;
+
+        let line = `${label} at ${time || "___"}: `;
+        if (bp) line += `BP ${bp}; `;
+        if (hr) line += `HR ${hr} bpm; `;
+        if (rr) line += `RR ${rr} breaths/min; `;
+        if (spo) line += `SpO₂ ${spo}%; `;
+        if (temp) line += `Temp ${temp}°F; `;
+        if (pain) line += `Pain ${pain}/10; `;
+        if (gcs) line += `GCS ${gcs}.`;
+        return line.trim();
       }
+
+      // Vitals – up to 3 sets
+      const v1 = buildVitalsLine("Initial vitals", vt, bp1, hr1, rr1, spo1, t1, pain1, gcs1);
+      const v2 = buildVitalsLine("Reassessment vitals (Set 2)", vt2, bp2, hr2, rr2, spo2, t2, pain2, gcs2);
+      const v3 = buildVitalsLine("Reassessment vitals (Set 3)", vt3, bp3, hr3, rr3, spo3, t3, pain3, gcs3);
+
+      if (v1) lines.push(v1);
+      if (v2) lines.push(v2);
+      if (v3) lines.push(v3);
 
       // Treatments
       if (airwayMgmt || circMgmt || medsGiven || otherInterventions) {
@@ -785,7 +889,7 @@ You can save this as `pcr_form.html` and open it in any browser.
       const narrativeBox = document.getElementById("narrativeText");
       narrativeBox.value = narrativeText;
 
-      // Quick summary box
+      // Quick summary box (uses Set 1)
       const summaryLines = [
         `Run ${run || "___"} – ${patientName} – ${age || "?"} y/o ${
           sex || "patient"
@@ -832,3 +936,9 @@ You can save this as `pcr_form.html` and open it in any browser.
 </body>
 </html>
 ```
+
+You can now:
+
+* Save this as `index.html`
+* Commit it to your GitHub repo
+* Hit your GitHub Pages URL and you’ll have 3 vitals sets + narrative.
