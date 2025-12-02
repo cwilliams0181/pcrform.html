@@ -1,5 +1,4 @@
 
-
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -179,7 +178,7 @@
   <header>
     <h1>EMS Patient Care Report</h1>
     <small>
-      Online PCR form with auto-filled headers, 10 vital sets, and GCS calculator.
+      Online PCR form with auto-filled headers, 10 vital sets, GCS calculator, and structured times.
     </small>
   </header>
 
@@ -406,8 +405,6 @@
         </div>
 
         <!-- 10 VITAL SETS -->
-        <!-- Use, say, Set 1 = arrival, others = reassessments -->
-        <!-- SET 1 -->
         <div class="section-title">Vitals – Set 1</div>
         <div class="grid">
           <div><label for="vitalsTime1">Time</label><input type="text" id="vitalsTime1" name="vitalsTime1" placeholder="HH:MM" /></div>
@@ -420,7 +417,7 @@
           <div><label for="gcs1">GCS</label><input type="number" id="gcs1" name="gcs1" min="3" max="15" /></div>
         </div>
 
-        <!-- SETS 2–10 (optional) -->
+        <!-- Sets 2–10 (optional, same layout) -->
         <!-- Set 2 -->
         <div class="section-title">Vitals – Set 2 (optional)</div>
         <div class="grid">
@@ -434,8 +431,6 @@
           <div><label for="gcs2">GCS</label><input type="number" id="gcs2" name="gcs2" min="3" max="15" /></div>
         </div>
 
-        <!-- Sets 3–10: same pattern -->
-        <!-- For brevity, they’re just numbered; feel free to customize labels -->
         <!-- Set 3 -->
         <div class="section-title">Vitals – Set 3 (optional)</div>
         <div class="grid">
@@ -574,9 +569,35 @@
         </div>
 
         <div class="section-title">Times</div>
-        <div>
-          <label for="dispatchTimes">Dispatch & scene times</label>
-          <textarea id="dispatchTimes" name="dispatchTimes" placeholder="Call received: __; En route: __; On scene: __; Patient contact: __; Depart scene: __; Arrive destination: __; In service: __."></textarea>
+        <div class="grid">
+          <div>
+            <label for="timeCallReceived">Call received</label>
+            <input type="text" id="timeCallReceived" name="timeCallReceived" placeholder="HH:MM" />
+          </div>
+          <div>
+            <label for="timeEnRoute">En route</label>
+            <input type="text" id="timeEnRoute" name="timeEnRoute" placeholder="HH:MM" />
+          </div>
+          <div>
+            <label for="timeOnScene">On scene</label>
+            <input type="text" id="timeOnScene" name="timeOnScene" placeholder="HH:MM" />
+          </div>
+          <div>
+            <label for="timePatientContact">Patient contact</label>
+            <input type="text" id="timePatientContact" name="timePatientContact" placeholder="HH:MM" />
+          </div>
+          <div>
+            <label for="timeDepartScene">Depart scene</label>
+            <input type="text" id="timeDepartScene" name="timeDepartScene" placeholder="HH:MM" />
+          </div>
+          <div>
+            <label for="timeArriveDest">Arrive destination</label>
+            <input type="text" id="timeArriveDest" name="timeArriveDest" placeholder="HH:MM" />
+          </div>
+          <div>
+            <label for="timeInService">In service</label>
+            <input type="text" id="timeInService" name="timeInService" placeholder="HH:MM" />
+          </div>
         </div>
 
         <div class="section-title">Destination & Disposition</div>
@@ -782,7 +803,7 @@
       });
     });
 
-    // ----- AUTO FILL HEADERS (RUN + UNIT + DATE + PATIENT NAME) -----
+    // ----- AUTO FILL HEADERS -----
     const runInput = document.getElementById("runNumber");
     const unitInput = document.getElementById("unitNumber");
     const dateInput = document.getElementById("incidentDateTime");
@@ -811,7 +832,6 @@
       el.addEventListener("input", updateAutoHeaders);
     });
 
-    // Utility
     function safe(v) {
       return (v || "").toString().trim();
     }
@@ -900,7 +920,15 @@
       const medsGiven = safe(document.getElementById("medsGiven").value);
       const otherInterventions = safe(document.getElementById("otherInterventions").value);
 
-      const dispatchTimes = safe(document.getElementById("dispatchTimes").value);
+      // TIMES (new individual fields)
+      const tCall = safe(document.getElementById("timeCallReceived").value);
+      const tEnRoute = safe(document.getElementById("timeEnRoute").value);
+      const tScene = safe(document.getElementById("timeOnScene").value);
+      const tContact = safe(document.getElementById("timePatientContact").value);
+      const tDepart = safe(document.getElementById("timeDepartScene").value);
+      const tArrive = safe(document.getElementById("timeArriveDest").value);
+      const tService = safe(document.getElementById("timeInService").value);
+
       const destination = safe(document.getElementById("destination").value);
       const destinationType = safe(document.getElementById("destinationType").value);
       const destinationReason = safe(document.getElementById("destinationReason").value);
@@ -999,9 +1027,18 @@
         lines.push(`Treatments provided: ${treatLines.join(" ")}`);
       }
 
-      // Times
-      if (dispatchTimes) {
-        lines.push(`Times: ${dispatchTimes}`);
+      // Times sentence
+      const timePieces = [];
+      if (tCall) timePieces.push(`Call received ${tCall}`);
+      if (tEnRoute) timePieces.push(`En route ${tEnRoute}`);
+      if (tScene) timePieces.push(`On scene ${tScene}`);
+      if (tContact) timePieces.push(`Patient contact ${tContact}`);
+      if (tDepart) timePieces.push(`Depart scene ${tDepart}`);
+      if (tArrive) timePieces.push(`Arrive destination ${tArrive}`);
+      if (tService) timePieces.push(`In service ${tService}`);
+
+      if (timePieces.length > 0) {
+        lines.push(`Times: ${timePieces.join("; ")}.`);
       }
 
       // Destination / disposition
