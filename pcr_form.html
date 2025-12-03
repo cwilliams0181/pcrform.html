@@ -170,13 +170,27 @@
       background: #f9fafb;
       font-size: 0.9rem;
     }
+
+    .signature-canvas {
+      width: 100%;
+      height: 120px;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      background: #ffffff;
+      touch-action: none; /* allows finger drawing on iPad */
+    }
+
+    .signature-block {
+      margin-top: 0.75rem;
+      margin-bottom: 1rem;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>EMS Patient Care Report</h1>
     <small>
-      Online PCR form with auto-filled headers, 10 vital sets, GCS calculator, and structured times.
+      Online PCR form with auto-filled headers, 10 vital sets, GCS calculator, structured times, and signatures.
     </small>
   </header>
 
@@ -188,7 +202,6 @@
       <button class="tab-button" data-tab="vitals">Vitals &amp; Treatments</button>
       <button class="tab-button" data-tab="times">Times &amp; Disposition</button>
       <button class="tab-button" data-tab="narrative">Narrative &amp; Output</button>
-      <button class="tab-button" data-tab="gcs">GCS Calc</button>
     </div>
 
     <form id="pcrForm">
@@ -393,7 +406,7 @@
         </div>
       </section>
 
-      <!-- VITALS & TREATMENTS TAB -->
+      <!-- VITALS & TREATMENTS TAB (with GCS calculator) -->
       <section id="vitals" class="tab-content">
         <div class="tab-header">
           Run: <span class="auto-run">N/A</span> |
@@ -425,7 +438,7 @@
           </div>
         </div>
 
-        <!-- THEN VITALS (10 SETS) -->
+        <!-- VITALS (10 SETS) -->
         <div class="section-title">Vitals – Set 1</div>
         <div class="grid">
           <div><label for="vitalsTime1">Time</label><input type="text" id="vitalsTime1" name="vitalsTime1" placeholder="HH:MM" /></div>
@@ -438,7 +451,7 @@
           <div><label for="gcs1">GCS</label><input type="number" id="gcs1" name="gcs1" min="3" max="15" /></div>
         </div>
 
-        <!-- Sets 2–10 (optional, same layout) -->
+        <!-- Sets 2–10 -->
         <div class="section-title">Vitals – Set 2 (optional)</div>
         <div class="grid">
           <div><label for="vitalsTime2">Time</label><input type="text" id="vitalsTime2" name="vitalsTime2" placeholder="HH:MM" /></div>
@@ -546,6 +559,84 @@
           <div><label for="pain10">Pain 0–10</label><input type="number" id="pain10" name="pain10" min="0" max="10" /></div>
           <div><label for="gcs10">GCS</label><input type="number" id="gcs10" name="gcs10" min="3" max="15" /></div>
         </div>
+
+        <!-- GCS CALCULATOR HERE -->
+        <div class="section-title">Glasgow Coma Scale (GCS) Calculator</div>
+        <div class="grid">
+          <div>
+            <label for="gcsEye">Eye opening (E)</label>
+            <select id="gcsEye">
+              <option value="">Select…</option>
+              <option value="4">4 – Spontaneous</option>
+              <option value="3">3 – To sound</option>
+              <option value="2">2 – To pressure</option>
+              <option value="1">1 – None</option>
+            </select>
+          </div>
+          <div>
+            <label for="gcsVerbal">Verbal response (V)</label>
+            <select id="gcsVerbal">
+              <option value="">Select…</option>
+              <option value="5">5 – Oriented</option>
+              <option value="4">4 – Confused</option>
+              <option value="3">3 – Words</option>
+              <option value="2">2 – Sounds</option>
+              <option value="1">1 – None</option>
+            </select>
+          </div>
+          <div>
+            <label for="gcsMotor">Motor response (M)</label>
+            <select id="gcsMotor">
+              <option value="">Select…</option>
+              <option value="6">6 – Obeys commands</option>
+              <option value="5">5 – Localises pain</option>
+              <option value="4">4 – Normal flexion</option>
+              <option value="3">3 – Abnormal flexion</option>
+              <option value="2">2 – Extension</option>
+              <option value="1">1 – None</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-primary" id="calcGcsBtn">
+            Calculate GCS
+          </button>
+        </div>
+
+        <div class="gcs-score-box">
+          <div><strong>Total GCS:</strong> <span id="gcsTotalDisplay">--</span></div>
+          <div><strong>Category:</strong> <span id="gcsCategoryDisplay">--</span></div>
+          <div class="small-note">
+            Mild: 13–15 &nbsp;|&nbsp; Moderate: 9–12 &nbsp;|&nbsp; Severe: 3–8
+          </div>
+        </div>
+
+        <div class="section-title">Apply GCS to Vitals Set</div>
+        <div class="grid">
+          <div>
+            <label for="gcsApplySet">Apply score to GCS field in Vitals Set:</label>
+            <select id="gcsApplySet">
+              <option value="">Select set…</option>
+              <option value="1">Set 1</option>
+              <option value="2">Set 2</option>
+              <option value="3">Set 3</option>
+              <option value="4">Set 4</option>
+              <option value="5">Set 5</option>
+              <option value="6">Set 6</option>
+              <option value="7">Set 7</option>
+              <option value="8">Set 8</option>
+              <option value="9">Set 9</option>
+              <option value="10">Set 10</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-outline" id="applyGcsBtn">
+            Apply GCS to selected vitals set
+          </button>
+        </div>
       </section>
 
       <!-- TIMES & DISPOSITION TAB -->
@@ -652,7 +743,7 @@
         </div>
       </section>
 
-      <!-- NARRATIVE TAB -->
+      <!-- NARRATIVE & SIGNATURES TAB -->
       <section id="narrative" class="tab-content">
         <div class="tab-header">
           Run: <span class="auto-run">N/A</span> |
@@ -684,92 +775,75 @@
         <div id="summaryBox" class="output-box">
           Summary will appear here after you generate the narrative.
         </div>
-      </section>
 
-      <!-- GCS CALCULATOR TAB -->
-      <section id="gcs" class="tab-content">
-        <div class="tab-header">
-          Run: <span class="auto-run">N/A</span> |
-          Unit: <span class="auto-unit">N/A</span> |
-          Date/Time: <span class="auto-date">N/A</span> |
-          Patient: <span class="auto-patient">N/A</span>
-        </div>
+        <!-- SIGNATURES AT BOTTOM OF TAB -->
+        <div class="section-title">Signatures</div>
 
-        <div class="section-title">Glasgow Coma Scale Calculator</div>
-        <div class="grid">
-          <div>
-            <label for="gcsEye">Eye opening (E)</label>
-            <select id="gcsEye">
-              <option value="">Select…</option>
-              <option value="4">4 – Spontaneous</option>
-              <option value="3">3 – To sound</option>
-              <option value="2">2 – To pressure</option>
-              <option value="1">1 – None</option>
-            </select>
+        <!-- PROVIDER SIGNATURE -->
+        <div class="signature-block">
+          <label for="sigProviderName">EMS Provider Name (printed)</label>
+          <input type="text" id="sigProviderName" name="sigProviderName" placeholder="Provider name" />
+          <div class="grid">
+            <div>
+              <label>EMS Provider Signature</label>
+              <canvas id="sigCanvasProvider" class="signature-canvas"></canvas>
+            </div>
+            <div>
+              <label for="sigProviderDate">Date</label>
+              <input type="text" id="sigProviderDate" name="sigProviderDate" placeholder="MM/DD/YYYY" />
+            </div>
           </div>
-          <div>
-            <label for="gcsVerbal">Verbal response (V)</label>
-            <select id="gcsVerbal">
-              <option value="">Select…</option>
-              <option value="5">5 – Oriented</option>
-              <option value="4">4 – Confused</option>
-              <option value="3">3 – Words</option>
-              <option value="2">2 – Sounds</option>
-              <option value="1">1 – None</option>
-            </select>
-          </div>
-          <div>
-            <label for="gcsMotor">Motor response (M)</label>
-            <select id="gcsMotor">
-              <option value="">Select…</option>
-              <option value="6">6 – Obeys commands</option>
-              <option value="5">5 – Localises pain</option>
-              <option value="4">4 – Normal flexion</option>
-              <option value="3">3 – Abnormal flexion</option>
-              <option value="2">2 – Extension</option>
-              <option value="1">1 – None</option>
-            </select>
+          <div class="btn-row">
+            <button type="button" class="btn btn-outline" data-clear="sigCanvasProvider">
+              Clear provider signature
+            </button>
           </div>
         </div>
 
-        <div class="btn-row">
-          <button type="button" class="btn btn-primary" id="calcGcsBtn">
-            Calculate GCS
-          </button>
-        </div>
-
-        <div class="gcs-score-box">
-          <div><strong>Total GCS:</strong> <span id="gcsTotalDisplay">--</span></div>
-          <div><strong>Category:</strong> <span id="gcsCategoryDisplay">--</span></div>
-          <div class="small-note">
-            Mild: 13–15 &nbsp;|&nbsp; Moderate: 9–12 &nbsp;|&nbsp; Severe: 3–8
+        <!-- PATIENT SIGNATURE -->
+        <div class="signature-block">
+          <label for="sigPatientName">Patient / Legal Guardian Name (printed)</label>
+          <input type="text" id="sigPatientName" name="sigPatientName" placeholder="Patient / Guardian name" />
+          <div class="grid">
+            <div>
+              <label>Patient / Legal Guardian Signature</label>
+              <canvas id="sigCanvasPatient" class="signature-canvas"></canvas>
+            </div>
+            <div>
+              <label for="sigPatientDate">Date</label>
+              <input type="text" id="sigPatientDate" name="sigPatientDate" placeholder="MM/DD/YYYY" />
+            </div>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-outline" data-clear="sigCanvasPatient">
+              Clear patient signature
+            </button>
           </div>
         </div>
 
-        <div class="section-title">Apply to Vitals Set</div>
-        <div class="grid">
-          <div>
-            <label for="gcsApplySet">Apply score to GCS field in Vitals Set:</label>
-            <select id="gcsApplySet">
-              <option value="">Select set…</option>
-              <option value="1">Set 1</option>
-              <option value="2">Set 2</option>
-              <option value="3">Set 3</option>
-              <option value="4">Set 4</option>
-              <option value="5">Set 5</option>
-              <option value="6">Set 6</option>
-              <option value="7">Set 7</option>
-              <option value="8">Set 8</option>
-              <option value="9">Set 9</option>
-              <option value="10">Set 10</option>
-            </select>
+        <!-- WITNESS SIGNATURE -->
+        <div class="signature-block">
+          <label for="sigWitnessName">Witness Name (printed)</label>
+          <input type="text" id="sigWitnessName" name="sigWitnessName" placeholder="Witness name" />
+          <div class="grid">
+            <div>
+              <label>Witness Signature</label>
+              <canvas id="sigCanvasWitness" class="signature-canvas"></canvas>
+            </div>
+            <div>
+              <label for="sigWitnessDate">Date</label>
+              <input type="text" id="sigWitnessDate" name="sigWitnessDate" placeholder="MM/DD/YYYY" />
+            </div>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-outline" data-clear="sigCanvasWitness">
+              Clear witness signature
+            </button>
           </div>
         </div>
 
-        <div class="btn-row">
-          <button type="button" class="btn btn-outline" id="applyGcsBtn">
-            Apply GCS to selected vitals set
-          </button>
+        <div class="small-note">
+          On iPad, sign inside each box with your finger or stylus. Signatures will appear when you print or save as PDF.
         </div>
       </section>
     </form>
@@ -1107,6 +1181,99 @@
     // Print
     document.getElementById("printBtn").addEventListener("click", () => {
       window.print();
+    });
+
+    // ----- SIGNATURE CANVAS HANDLING -----
+    function initSignatureCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return null;
+      const ctx = canvas.getContext("2d");
+      let drawing = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      // Resize canvas backing store to match CSS size
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+
+      function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+        if (e.touches && e.touches.length) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+        return {
+          x: clientX - rect.left,
+          y: clientY - rect.top
+        };
+      }
+
+      function startDraw(e) {
+        e.preventDefault();
+        const pos = getPos(e);
+        drawing = true;
+        lastX = pos.x;
+        lastY = pos.y;
+      }
+
+      function draw(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#111827";
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        lastX = pos.x;
+        lastY = pos.y;
+      }
+
+      function endDraw(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        drawing = false;
+      }
+
+      canvas.addEventListener("mousedown", startDraw);
+      canvas.addEventListener("mousemove", draw);
+      canvas.addEventListener("mouseup", endDraw);
+      canvas.addEventListener("mouseleave", endDraw);
+
+      canvas.addEventListener("touchstart", startDraw, { passive: false });
+      canvas.addEventListener("touchmove", draw, { passive: false });
+      canvas.addEventListener("touchend", endDraw, { passive: false });
+      canvas.addEventListener("touchcancel", endDraw, { passive: false });
+
+      return {
+        clear: () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      };
+    }
+
+    const sigProvider = initSignatureCanvas("sigCanvasProvider");
+    const sigPatient = initSignatureCanvas("sigCanvasPatient");
+    const sigWitness = initSignatureCanvas("sigCanvasWitness");
+
+    document.querySelectorAll("button[data-clear]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-clear");
+        if (id === "sigCanvasProvider" && sigProvider) sigProvider.clear();
+        if (id === "sigCanvasPatient" && sigPatient) sigPatient.clear();
+        if (id === "sigCanvasWitness" && sigWitness) sigWitness.clear();
+      });
     });
 
     // Initialize headers once
